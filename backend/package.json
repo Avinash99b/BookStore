@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.0.0",
+    "@types/cors": "^2.8.19",
     "@types/jsonwebtoken": "^9.0.10",
     "bcrypt": "^5.1.0",
     "cors": "^2.8.5",

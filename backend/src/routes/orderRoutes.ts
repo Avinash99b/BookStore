@@ -8,4 +8,7 @@ const router = Router();
 router.get('/seller', authenticateJWT, OrderController.sellerOrders);
 router.patch('/:id', authenticateJWT, OrderController.updateStatus);
 
+// Buyer route
+router.post('/', authenticateJWT, OrderController.createOrder);
+
 export default router;

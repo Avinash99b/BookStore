@@ -80,7 +80,7 @@ export class BookController {
             if (!book) {
                 return res.status(404).json({ error: 'Book not found' });
             }
-            return res.json({ book });
+            return res.json({ ...book });
         } catch (err: any) {
             console.error(err);
             return res.status(500).json({ error: 'Server error' });

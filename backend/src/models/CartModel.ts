@@ -17,15 +17,22 @@ export class CartModel {
         return data as ICartRow;
     }
 
-    static async findByBuyer(buyer_id: number): Promise<ICartRow[]> {
+    static async findByBuyer(buyer_id: number): Promise<{id: number, book_id: number, book_price: number, quantity: number, book_title: string}[]> {
         const { data, error } = await supabase
             .from(this.table)
-            .select('*')
+            .select('id, book_id, quantity, books:book_id (price, title)')
             .eq('buyer_id', buyer_id)
             .order('created_at', { ascending: false });
 
         if (error) throw error;
-        return (data ?? []) as ICartRow[];
+        // Map to required format
+        return (data ?? []).map((item: any) => ({
+            id: item.id,
+            book_id: item.book_id,
+            book_price: item.books?.price ?? 0,
+            quantity: item.quantity,
+            book_title: item.books?.title ?? '',
+        }));
     }
 
     static async updateQuantity(id: number, quantity: number): Promise<ICartRow> {

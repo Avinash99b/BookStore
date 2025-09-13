@@ -1,26 +1,8 @@
-import {Button, Text, View} from "react-native";
-import { StyleSheet } from 'react-native';
+import { View, Text } from "react-native";
+import RootNavigator from "@/src/navigation/RootNavigator";
 
 export default function Index() {
-    const handlePress = () => {
-        alert('Button Pressed!');
-    };
-
     return (
-        <View style={styles.container}>
-            <Button title="Setup" onPress={handlePress} />
-        </View>
+        <RootNavigator/>
     );
-
 }
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,             // Fill the whole screen
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    title: {
-        fontSize: 24,
-        marginBottom: 20,
-    },
-});
