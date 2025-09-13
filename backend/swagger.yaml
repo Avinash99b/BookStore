@@ -86,14 +86,21 @@ components:
           type: integer
         created_at:
           type: string
+
 security:
   - bearerAuth: []
+
+tags:
+  - name: Auth
+  - name: Books
+  - name: Cart
+  - name: Orders
 
 paths:
   /auth/register:
     post:
       summary: Register a new user
-      tags: [ Auth ]
+      tags: [Auth]
       requestBody:
         required: true
         content:
@@ -109,7 +116,12 @@ paths:
                   type: string
                 role:
                   type: string
-                  enum: [ buyer, seller ]
+                  enum: [buyer, seller]
+            example:
+              name: John Doe
+              email: john@example.com
+              password: password123
+              role: buyer
       responses:
         '201':
           description: User registered successfully
@@ -118,11 +130,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/AuthResponse'
         '400':
-          description: Bad request / Email exists
+          description: Invalid input
   /auth/login:
     post:
-      summary: Login user
-      tags: [ Auth ]
+      summary: Login a user
+      tags: [Auth]
       requestBody:
         required: true
         content:
@@ -134,31 +146,43 @@ paths:
                   type: string
                 password:
                   type: string
+            example:
+              email: john@example.com
+              password: password123
       responses:
         '200':
-          description: Login success
+          description: Login successful
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthResponse'
-        '400':
+        '401':
           description: Invalid credentials
 
   /books:
+    get:
+      summary: List all books
+      tags: [Books]
+      responses:
+        '200':
+          description: List of books
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Book'
     post:
       summary: Add a new book (seller only)
-      tags: [ Books ]
+      tags: [Books]
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required:
-                - title
-                - price
               properties:
                 title:
                   type: string
@@ -170,80 +194,68 @@ paths:
                   type: integer
                 image_url:
                   type: string
+            example:
+              title: Example Book
+              description: A great book
+              price: 19.99
+              stock: 10
+              image_url: https://example.com/book.jpg
       responses:
         '201':
           description: Book created
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  book:
-                    $ref: '#/components/schemas/Book'
-    get:
-      summary: Get all books (public)
-      tags: [ Books ]
-      responses:
-        '200':
-          description: List of books
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  books:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Book'
-
+                $ref: '#/components/schemas/Book'
+        '400':
+          description: Invalid input
   /books/my:
     get:
-      summary: Get seller's books
-      tags: [ Books ]
+      summary: List books for the authenticated seller
+      tags: [Books]
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       responses:
         '200':
-          description: Seller books
+          description: List of seller's books
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  books:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Book'
-
+                type: array
+                items:
+                  $ref: '#/components/schemas/Book'
   /books/{id}:
     get:
-      summary: Get Specific Book Details
-      tags: [ Books ]
+      summary: Get book by ID
+      tags: [Books]
       parameters:
-        - name: id
-          in: path
-          required: true
+        - in: path
+          name: id
           schema:
             type: integer
+          required: true
       responses:
         '200':
-          description: Book Fetched
+          description: Book details
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Book'
+        '404':
+          description: Book not found
     patch:
-      summary: Update book (seller only)
-      tags: [ Books ]
+      summary: Update a book (seller only)
+      tags: [Books]
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       parameters:
-        - name: id
-          in: path
-          required: true
+        - in: path
+          name: id
           schema:
             type: integer
+          required: true
       requestBody:
+        required: true
         content:
           application/json:
             schema:
@@ -262,72 +274,39 @@ paths:
       responses:
         '200':
           description: Book updated
-    delete:
-      summary: Delete book
-      tags: [ Books ]
-      security:
-        - bearerAuth: [ ]
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Book deleted
-
-  /orders/seller:
-    get:
-      summary: Get seller's orders
-      tags: [ Orders ]
-      security:
-        - bearerAuth: [ ]
-      responses:
-        '200':
-          description: Seller orders
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  orders:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Order'
-
-  /orders/{id}:
-    patch:
-      summary: Update order status
-      tags: [ Orders ]
+                $ref: '#/components/schemas/Book'
+        '400':
+          description: Invalid input
+        '404':
+          description: Book not found
+    delete:
+      summary: Delete a book (seller only)
+      tags: [Books]
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       parameters:
-        - name: id
-          in: path
-          required: true
+        - in: path
+          name: id
           schema:
             type: integer
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                status:
-                  type: string
-                  enum: [ Pending, Shipped, Delivered, Cancelled ]
+          required: true
       responses:
-        '200':
-          description: Order updated
+        '204':
+          description: Book deleted
+        '404':
+          description: Book not found
 
   /cart:
     post:
-      summary: Add item to cart
-      tags: [ Cart ]
+      summary: Add item to cart (buyer only)
+      tags: [Cart]
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       requestBody:
+        required: true
         content:
           application/json:
             schema:
@@ -337,48 +316,54 @@ paths:
                   type: integer
                 quantity:
                   type: integer
+            example:
+              book_id: 1
+              quantity: 2
       responses:
         '201':
-          description: Item added
+          description: Item added to cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItem'
+        '400':
+          description: Invalid input
     get:
-      summary: Get buyer cart
-      tags: [ Cart ]
+      summary: Get current user's cart (buyer only)
+      tags: [Cart]
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       responses:
         '200':
           description: Cart items
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  items:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/CartItem'
+                type: array
+                items:
+                  $ref: '#/components/schemas/CartItem'
     delete:
-      summary: Clear buyer cart
-      tags: [ Cart ]
+      summary: Clear the cart (buyer only)
+      tags: [Cart]
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       responses:
-        '200':
+        '204':
           description: Cart cleared
-
   /cart/{id}:
     patch:
-      summary: Update cart item quantity
-      tags: [ Cart ]
+      summary: Update a cart item (buyer only)
+      tags: [Cart]
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       parameters:
-        - name: id
-          in: path
-          required: true
+        - in: path
+          name: id
           schema:
             type: integer
+          required: true
       requestBody:
+        required: true
         content:
           application/json:
             schema:
@@ -386,20 +371,107 @@ paths:
               properties:
                 quantity:
                   type: integer
+            example:
+              quantity: 3
       responses:
         '200':
           description: Cart item updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItem'
+        '404':
+          description: Cart item not found
     delete:
-      summary: Remove cart item
-      tags: [ Cart ]
+      summary: Remove a cart item (buyer only)
+      tags: [Cart]
       security:
-        - bearerAuth: [ ]
+        - bearerAuth: []
       parameters:
-        - name: id
-          in: path
-          required: true
+        - in: path
+          name: id
           schema:
             type: integer
+          required: true
+      responses:
+        '204':
+          description: Cart item removed
+        '404':
+          description: Cart item not found
+
+  /orders:
+    post:
+      summary: Place an order (buyer only)
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cart_item_ids:
+                  type: array
+                  items:
+                    type: integer
+            example:
+              cart_item_ids: [1, 2]
+      responses:
+        '201':
+          description: Order placed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Invalid input
+  /orders/seller:
+    get:
+      summary: Get seller's orders (seller only)
+      tags: [Orders]
+      security:
+        - bearerAuth: []
       responses:
         '200':
-          description: Item removed
+          description: List of seller's orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+  /orders/{id}:
+    patch:
+      summary: Update order status (seller only)
+      tags: [Orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [Pending, Shipped, Delivered, Cancelled]
+            example:
+              status: Shipped
+      responses:
+        '200':
+          description: Order status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          description: Order not found

@@ -1,50 +1,72 @@
-# Welcome to your Expo app 👋
+# 📱 Bookstore Frontend
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+This is the React Native (Expo) frontend for the Multi-Seller Bookstore App.
 
-## Get started
+---
 
-1. Install dependencies
+## 🚀 Features
+- Buyer and seller flows (storefront, cart, orders, seller dashboard)
+- Authentication (login/register)
+- Connects to backend REST API
+- Modern UI with Expo Router
 
+---
+
+## 🛠️ Setup
+
+1. **Install dependencies:**
    ```bash
    npm install
    ```
-
-2. Start the app
-
+2. **Start the app:**
    ```bash
    npx expo start
    ```
+   - Use the QR code to open in Expo Go, or run on an emulator/simulator.
 
-In the output, you'll find options to open the app in a
+---
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 🌐 Backend API
+- The app expects the backend API to be running (see `../backend/README.md`).
+- Update API URLs in `src/api/api.ts` if your backend is not running on the default address.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+---
 
-## Get a fresh project
+## 🧩 Environment Variables
+- No environment variables are required by default.
+- See `.env.example` for future use.
 
-When you're ready, run:
+---
 
-```bash
-npm run reset-project
+## 🗄️ Project Structure
+```
+app/         # App entry and navigation
+assets/      # Images and static assets
+src/
+  api/       # API calls
+  components/# Reusable UI components
+  context/   # Auth context
+  navigation/# Navigation stacks
+  screens/   # App screens
+  utils/     # Helpers
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+---
 
-## Learn more
+## 🧑‍💻 Development
+- Uses TypeScript
+- File-based routing with Expo Router
+- Edit screens/components in `src/`
 
-To learn more about developing your project with Expo, look at the following resources:
+---
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## 🤝 Contributing
+1. Fork the repo & create a feature branch
+2. Make your changes (with clear commits)
+3. Ensure code is linted and tested
+4. Open a pull request
 
-## Join the community
+---
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## 📝 License
+MIT
