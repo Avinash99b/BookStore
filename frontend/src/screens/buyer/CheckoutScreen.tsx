@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCart, createOrder } from '../../api/api';
 import { useNavigation, NavigationProp, useRoute, RouteProp } from '@react-navigation/native';
 import { formatPrice } from '../../utils/helpers';
+import { Ionicons } from '@expo/vector-icons';
 
 type BuyerStackParamList = {
   Storefront: undefined;
@@ -61,7 +62,7 @@ const CheckoutScreen = () => {
       setLocalItems([]);
       setLocalTotal(0);
       Alert.alert('Order Placed', 'Your order has been placed successfully!', [
-        { text: 'OK', onPress: () => navigation.navigate('Cart') },
+        { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     },
     onError: (err: any) => {
@@ -74,22 +75,39 @@ const CheckoutScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Button title="Back" onPress={() => navigation.goBack()} />
-      <Text style={styles.title}>Checkout</Text>
+      <View style={styles.headerRow}>
+        <Ionicons name="arrow-back" size={28} color="#007bff" onPress={() => navigation.goBack()} style={styles.backIcon} />
+        <Text style={styles.title}>Checkout</Text>
+      </View>
       {localItems.length === 0 ? (
-        <Text>Your cart is empty.</Text>
+        <View style={styles.emptyContainer}>
+          <Ionicons name="cart-outline" size={64} color="#bbb" style={{ marginBottom: 12 }} />
+          <Text style={styles.emptyText}>Your cart is empty.</Text>
+        </View>
       ) : (
-        <>
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Order Summary</Text>
           {localItems.map((item: CartItemType) => (
             <View key={item.id} style={styles.itemRow}>
-              <Text style={styles.itemTitle}>{item.book_title}</Text>
-              <Text>Qty: {item.quantity}</Text>
-              <Text>{formatPrice(item.book_price * item.quantity)}</Text>
+              <Text style={styles.itemTitle} numberOfLines={1}>{item.book_title}</Text>
+              <Text style={styles.itemQty}>x{item.quantity}</Text>
+              <Text style={styles.itemPrice}>{formatPrice(item.book_price * item.quantity)}</Text>
             </View>
           ))}
-          <Text style={styles.total}>Total: {formatPrice(localTotal)}</Text>
-          <Button title={createOrderMutation.isPending ? 'Placing Order...' : 'Place Order'} onPress={() => createOrderMutation.mutate()} disabled={createOrderMutation.isLoading} />
-        </>
+          <View style={styles.divider} />
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>Total</Text>
+            <Text style={styles.totalValue}>{formatPrice(localTotal)}</Text>
+          </View>
+          <View style={styles.buttonRow}>
+            <Button
+              title={createOrderMutation.isPending ? 'Placing Order...' : 'Place Order'}
+              onPress={() => createOrderMutation.mutate()}
+              disabled={createOrderMutation.isLoading}
+              color="#007bff"
+            />
+          </View>
+        </View>
       )}
     </View>
   );
@@ -98,27 +116,106 @@ const CheckoutScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    padding: 18,
+    backgroundColor: '#f7f8fa',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 18,
+  },
+  backIcon: {
+    marginRight: 10,
+    padding: 4,
   },
   title: {
-    fontSize: 22,
+    fontSize: 26,
     fontWeight: 'bold',
-    marginBottom: 16,
+    color: '#222',
+    flex: 1,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 18,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#007bff',
+    marginBottom: 12,
+    letterSpacing: 0.5,
   },
   itemRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 10,
+    paddingVertical: 4,
   },
   itemTitle: {
-    fontWeight: 'bold',
-    flex: 1,
+    fontWeight: '600',
+    fontSize: 16,
+    flex: 2,
+    color: '#333',
+    marginRight: 8,
   },
-  total: {
+  itemQty: {
+    fontSize: 15,
+    color: '#666',
+    flex: 0.5,
+    textAlign: 'center',
+  },
+  itemPrice: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    color: '#007bff',
+    flex: 1,
+    textAlign: 'right',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#e0e0e0',
+    marginVertical: 12,
+    borderRadius: 1,
+  },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 18,
+  },
+  totalLabel: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginVertical: 16,
-    textAlign: 'right',
+    color: '#222',
+  },
+  totalValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#007bff',
+  },
+  buttonRow: {
+    marginTop: 8,
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 60,
+  },
+  emptyText: {
+    fontSize: 20,
+    color: '#888',
+    fontWeight: '500',
+    textAlign: 'center',
+    marginTop: 8,
   },
 });
 

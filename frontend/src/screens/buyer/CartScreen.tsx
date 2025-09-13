@@ -1,5 +1,5 @@
-import React from 'react';
-import {View, Text, StyleSheet, FlatList, Button, Alert} from 'react-native';
+import React, {useEffect} from 'react';
+import {View, Text, StyleSheet, FlatList, Button} from 'react-native';
 import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import {getCart, updateCartItem, removeCartItem} from '../../api/api';
 import CartItem from '../../components/CartItem';
@@ -31,7 +31,7 @@ interface BuyerStackParamList {
 const CartScreen = () => {
     const navigation = useNavigation<NavigationProp<any>>();
     const queryClient = useQueryClient();
-    const {data, isLoading, error} = useQuery({
+    const {data, isLoading, error, refetch} = useQuery({
         queryKey: ['cart'],
         queryFn: getCart
     });
@@ -52,6 +52,13 @@ const CartScreen = () => {
         },
         onSuccess: () => queryClient.invalidateQueries({queryKey: ['cart']}),
     });
+
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('focus', () => {
+            refetch();
+        });
+        return unsubscribe;
+    }, [navigation, refetch]);
 
     if (isLoading) return <Text>Loading...</Text>;
     if (error) return <Text>Error loading cart.</Text>;
@@ -74,16 +81,7 @@ const CartScreen = () => {
                             quantity={item.quantity}
                             price={item.book_price * item.quantity}
                             onUpdate={q => updateMutation.mutate({id: item.id, quantity: q})}
-                            onRemove={() => {
-                                Alert.alert('Remove Item', 'Are you sure?', [
-                                    {text: 'Cancel', style: 'cancel'},
-                                    {
-                                        text: 'Remove',
-                                        style: 'destructive',
-                                        onPress: () => removeMutation.mutate(item.id)
-                                    },
-                                ]);
-                            }}
+                            onConfirmRemove={() => removeMutation.mutate(item.id)}
                         />
                     )}
                 />

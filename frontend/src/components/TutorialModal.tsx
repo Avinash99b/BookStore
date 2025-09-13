@@ -19,6 +19,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ visible, onClose, mode })
         ) : (
           <Text style={styles.text}>• Tap the card to edit your book.</Text>
         )}
+        <Text style={styles.text}>• When you tap a card, it smoothly flips and the details (including seller and description) animate into view.</Text>
         <TouchableOpacity style={styles.button} onPress={onClose}>
           <Text style={styles.buttonText}>Got it!</Text>
         </TouchableOpacity>
@@ -70,4 +71,3 @@ const styles = StyleSheet.create({
 });
 
 export default TutorialModal;
-

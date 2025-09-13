@@ -3,11 +3,13 @@ import { View, StyleSheet, Dimensions, Text } from 'react-native';
 import { PanGestureHandler, TapGestureHandler, GestureHandlerRootView, PanGestureHandlerGestureEvent, TapGestureHandlerStateChangeEvent } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, runOnJS } from 'react-native-reanimated';
 import BookCard from './BookCard';
-import { addToCart } from '../api/api';
+import { addToCart, getCart } from '../api/api';
+import { Ionicons } from '@expo/vector-icons';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const CARD_WIDTH = SCREEN_WIDTH * 0.92;
-const CARD_HEIGHT = 420;
+const SCREEN_HEIGHT = Dimensions.get('window').height;
+const CARD_WIDTH = SCREEN_WIDTH * 0.92; // ~92% of screen width
+const CARD_HEIGHT = SCREEN_HEIGHT * 0.6; // 50% of screen height
 
 interface Book {
   id: number;
@@ -30,41 +32,48 @@ interface BookSwiperProps {
 
 const BookSwiper: React.FC<BookSwiperProps> = ({ books, onDeckEmpty, onCardTap, onSwipeLeft, onSwipeRight, showFlip = true, onLongPress }) => {
   const [current, setCurrent] = useState(0);
-  const [flipped, setFlipped] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [atEnd, setAtEnd] = useState(false);
   const x = useSharedValue(0);
-  const rotateY = useSharedValue(0);
   const cardRef = useRef(null);
 
   const handleSwipe = async (direction: 'left' | 'right') => {
     const book = books[current];
     if (direction === 'left') {
-      if (onSwipeLeft) {
-        const result = await onSwipeLeft(book);
-        if (typeof result === 'string') setFeedback(result);
-        else setFeedback(null);
-      } else {
-        setFeedback('Added to Cart!');
-        try {
+      try {
+        // Fetch the cart
+        const cartRes = await getCart();
+        // cartRes.data.items or cartRes.data depending on backend response
+        const cartItems = cartRes.data?.items || cartRes.data || [];
+        const cartItem = cartItems.find((item: any) => item.book_id === book.id);
+        if (cartItem) {
+          // Book is already in cart, update quantity
+          await addToCart(book.id, cartItem.quantity + 1);
+          setFeedback('Updated cart quantity!');
+        } else {
+          // Book not in cart, add with quantity 1
           await addToCart(book.id, 1);
-        } catch {}
+          setFeedback('Added to Cart!');
+        }
+      } catch (e) {
+        setFeedback('Error updating cart');
       }
     } else if (direction === 'right') {
       if (onSwipeRight) onSwipeRight(book);
       setFeedback(null);
     }
     setTimeout(() => setFeedback(null), 900);
-    setFlipped(false);
     setCurrent((prev) => {
       const next = prev + 1;
       if (next >= books.length) {
         onDeckEmpty && onDeckEmpty();
+        setAtEnd(true);
         return prev;
       }
+      setAtEnd(false);
       return next;
     });
     x.value = 0;
-    rotateY.value = 0;
   };
 
   const animatedCardStyle = useAnimatedStyle(() => ({
@@ -72,22 +81,19 @@ const BookSwiper: React.FC<BookSwiperProps> = ({ books, onDeckEmpty, onCardTap, 
       { translateX: x.value },
       { rotateZ: `${x.value / 20}deg` },
       { perspective: 1200 },
-      { rotateY: `${rotateY.value}deg` },
     ],
   }));
 
   // Pan gesture handler for swiping
   const onPanGestureEvent = (event: PanGestureHandlerGestureEvent) => {
-    if (!flipped) {
-      x.value = event.nativeEvent.translationX;
-    }
+    x.value = event.nativeEvent.translationX;
   };
 
   const onPanHandlerStateChange = (event: PanGestureHandlerGestureEvent) => {
     if (event.nativeEvent.state === 5) { // State.END
-      if (x.value < -120) {
+      if (x.value < -80) { // Make swipe left and right equally sensitive
         runOnJS(handleSwipe)('left');
-      } else if (x.value > 120) {
+      } else if (x.value > 80) {
         runOnJS(handleSwipe)('right');
       } else {
         x.value = withSpring(0);
@@ -95,17 +101,21 @@ const BookSwiper: React.FC<BookSwiperProps> = ({ books, onDeckEmpty, onCardTap, 
     }
   };
 
-  // Tap gesture handler for flipping or custom tap
+  // Tap gesture handler for custom tap
   const onTapHandlerStateChange = (event: TapGestureHandlerStateChangeEvent) => {
     if (event.nativeEvent.state === 4) { // State.ACTIVE
       if (onCardTap) {
         onCardTap(books[current]);
-      } else if (showFlip) {
-        setFlipped((prev) => !prev);
-        rotateY.value = withTiming(flipped ? 0 : 180, { duration: 400 });
       }
     }
   };
+
+  if (atEnd) return (
+    <View style={styles.emptyCentered}>
+      <Ionicons name="refresh" size={48} color="#888" onPress={() => { setCurrent(0); setAtEnd(false); }}/>
+      <Text style={styles.emptyTextCentered}>You are at the end of the feed, please refresh to start again.</Text>
+    </View>
+  );
 
   if (!books[current]) return <View style={styles.empty}><Text style={styles.emptyText}>No more books!</Text></View>;
 
@@ -114,14 +124,13 @@ const BookSwiper: React.FC<BookSwiperProps> = ({ books, onDeckEmpty, onCardTap, 
       <PanGestureHandler
         onGestureEvent={onPanGestureEvent}
         onHandlerStateChange={onPanHandlerStateChange}
-        enabled={!flipped}
+        enabled={true}
       >
         <TapGestureHandler onHandlerStateChange={onTapHandlerStateChange} enabled={!feedback}>
           <Animated.View style={[styles.card, animatedCardStyle]} ref={cardRef}>
             <BookCard
               {...books[current]}
-              showDetails={showFlip && flipped}
-              style={{ width: CARD_WIDTH, height: CARD_HEIGHT }}
+              style={{ width: CARD_WIDTH }}
               onLongPress={onLongPress}
               onPress={onCardTap ? () => onCardTap(books[current]) : undefined}
             />
@@ -145,7 +154,6 @@ const styles = StyleSheet.create({
   },
   card: {
     width: CARD_WIDTH,
-    height: CARD_HEIGHT,
     backgroundColor: '#fff',
     borderRadius: 18,
     shadowColor: '#000',
@@ -153,9 +161,8 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 8 },
     elevation: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
     overflow: 'visible',
+    position: 'relative',
   },
   feedbackOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -177,10 +184,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  emptyCentered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'column',
+  },
   emptyText: {
     fontSize: 22,
     color: '#888',
     fontWeight: 'bold',
+  },
+  emptyTextCentered: {
+    fontSize: 22,
+    color: '#888',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginTop: 16,
+    marginHorizontal: 16,
   },
 });
 
